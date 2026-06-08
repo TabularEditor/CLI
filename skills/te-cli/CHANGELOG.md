@@ -14,11 +14,13 @@ All notable changes to the `te-cli` skill are documented in this file.
 - `references/semantic-modeling-practices.md`: semantic modeling best practices (star schema, relationships, VertiPaq and cardinality, usability and AI-readiness metadata, date tables, measures vs calculated columns, calculation groups, RLS/OLS/BPA), each tied to a `te` command and cited from Microsoft Learn, SQLBI, and the Tabular Editor blog.
 - Worked authoring workflows for RLS roles, calculation groups, date tables, perspectives, translations, incremental refresh, and field parameters.
 - `references/fabric-cli-tandem.md` and `references/pbir-cli-tandem.md`: tandem workflows for using `te` with the Fabric CLI (`fab`) and the pbir CLI, including model-to-report rename propagation.
+- SKILL.md "Common operations" quick-reference: summarize, search, query (inline vs `.dax` file), make a change, make bulk changes, and validate/optimize, each with the most concise command.
 
 ### Fixed
 
 - Promoted the `te connect` session-scope behavior and the MPartition path asymmetry to critical rules.
 - Corrected the save-gate wording (blocks on newly introduced validation errors, not a diff against the loaded model), softened the `--force` framing, and hedged the bidirectional workspace-mirror claim.
+- Documented that `te ls` cannot enumerate relationships (`te ls Relationships` / `--type relationship` error with `No objects match path 'Relationships'`, a CLI wiring gap); relationship discovery now uses DAX `EVALUATE INFO.VIEW.RELATIONSHIPS()` throughout, with a gotcha explaining the error tell.
 
 [0.2.0]: https://github.com/TabularEditor/CLI/releases/tag/skill-v0.2.0
 

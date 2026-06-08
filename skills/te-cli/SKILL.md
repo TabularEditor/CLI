@@ -9,6 +9,9 @@ description: Expert guidance for the cross-platform Tabular Editor CLI (the `te`
 The `te` CLI is a single self-contained binary that loads, edits, validates, deploys, refreshes, and tests semantic models against TMDL/BIM files, Power BI Desktop, and cloud workspaces (Power BI, Fabric, Azure AS, SSAS). It is built on the same TOMWrapper that powers Tabular Editor 3, so model edits behave like the desktop app.
 
 > [!IMPORTANT]
+> Always pass `--output-format json` when driving `te` programmatically; the default text/table output uses tables and ANSI styling that mangle in agent transcripts, while JSON is parseable and avoids rendering issues.
+
+> [!IMPORTANT]
 > Limited public preview. Preview builds stop functioning after 2026-09-30. No license is required during preview. Issues and feedback: https://github.com/TabularEditor/CLI
 
 > [!IMPORTANT]

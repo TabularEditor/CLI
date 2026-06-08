@@ -7,7 +7,7 @@ A drop-in skill that teaches AI coding agents how to use the [Tabular Editor CLI
 
 ## What this is
 
-A single Markdown file ([`SKILL.md`](./SKILL.md)) packed with the conventions, command reference, common workflows, gotchas, and CI/CD patterns Claude, GitHub CoPilot (and other AI agents) need to drive `te` productively. Once installed, the agent answers "how do I deploy this model?" or "add a measure that calculates margin" with idiomatic `te` invocations instead of guessing or hallucinating flags.
+A skill folder ([`SKILL.md`](./SKILL.md) plus a [`references/`](./references/) directory) packed with the conventions, command reference, common workflows, gotchas, CI/CD patterns, and semantic modeling best practices Claude, GitHub CoPilot (and other AI agents) need to drive `te` productively. Once installed, the agent answers "how do I deploy this model?" or "add a measure that calculates margin" with idiomatic `te` invocations instead of guessing or hallucinating flags.
 
 The skill covers:
 
@@ -26,6 +26,17 @@ The skill covers:
 In the Anthropic ecosystem (Claude Code / Claude.ai / Claude Desktop), a **skill** is a Markdown file that an agent loads on demand based on the user's prompt. The skill's YAML frontmatter (`name`, `description`, `version`) tells the agent **when** to load it and **what** it covers. The plain-Markdown body teaches the agent **how** to do its job.
 
 Other agents (GitHub Copilot, Cursor, Aider, generic `AGENTS.md` consumers) don't have an identical "skill" concept but can still benefit from the same content as a custom-instructions file. Installation per agent is covered below.
+
+## Install as a Claude Code plugin (recommended)
+
+This repo is a Claude Code plugin marketplace named `te-cli` with a single plugin, `te-cli-agentic-use`. Installing it pulls in `SKILL.md` and the whole `references/` directory at once:
+
+```bash
+claude plugin marketplace add TabularEditor/CLI
+claude plugin install te-cli-agentic-use@te-cli
+```
+
+Run `/plugin` (or `claude plugin list`) to confirm it is enabled. For directory-based installs (below), copy the entire `skills/te-cli/` folder, not just `SKILL.md`, so the `references/` travel with it.
 
 ## Downloading the skill file
 
@@ -141,7 +152,8 @@ For CLI behavior questions (not skill-content questions), the same tracker is th
 
 ## Files in this folder
 
-- [`SKILL.md`](./SKILL.md) - the skill itself (drop-in for Claude / Copilot / generic agents)
+- [`SKILL.md`](./SKILL.md) - the lean skill entry point (when-to-use, critical rules, quickstart, command index, modeling checklist)
+- [`references/`](./references/) - command reference, common workflows, gotchas, config/CI/CD/env, TE2 migration, and semantic modeling practices, loaded on demand
 - [`README.md`](./README.md) - this file
 - [`CHANGELOG.md`](./CHANGELOG.md) - version history
 - [`LICENSE`](./LICENSE) - MIT license

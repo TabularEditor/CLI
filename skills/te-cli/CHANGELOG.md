@@ -2,6 +2,26 @@
 
 All notable changes to the `te-cli` skill are documented in this file.
 
+## [0.2.0] - 2026-06-08
+
+### Changed
+
+- Restructured the single-file skill into a lean `SKILL.md` plus a `references/` directory for progressive disclosure: `command-reference.md`, `workflows.md`, `gotchas.md`, `config-cicd-env.md`, `te2-migration.md`.
+
+### Added
+
+- Packaged as a Claude Code plugin (`te-cli-agentic-use`) with `.claude-plugin/plugin.json` and a one-entry `marketplace.json`, installable via `claude plugin install`.
+- `references/semantic-modeling-practices.md`: semantic modeling best practices (star schema, relationships, VertiPaq and cardinality, usability and AI-readiness metadata, date tables, measures vs calculated columns, calculation groups, RLS/OLS/BPA), each tied to a `te` command and cited from Microsoft Learn, SQLBI, and the Tabular Editor blog.
+- Worked authoring workflows for RLS roles, calculation groups, date tables, perspectives, translations, incremental refresh, and field parameters.
+- `references/fabric-cli-tandem.md` and `references/pbir-cli-tandem.md`: tandem workflows for using `te` with the Fabric CLI (`fab`) and the pbir CLI, including model-to-report rename propagation.
+
+### Fixed
+
+- Promoted the `te connect` session-scope behavior and the MPartition path asymmetry to critical rules.
+- Corrected the save-gate wording (blocks on newly introduced validation errors, not a diff against the loaded model), softened the `--force` framing, and hedged the bidirectional workspace-mirror claim.
+
+[0.2.0]: https://github.com/TabularEditor/CLI/releases/tag/skill-v0.2.0
+
 ## [0.1.0] - 2026-06-04
 
 ### Added

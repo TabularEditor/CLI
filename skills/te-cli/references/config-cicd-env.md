@@ -41,10 +41,7 @@ Companion to the te-cli skill (SKILL.md).
 | `debug` | bool | `false` | Debug logs to stderr |
 | `disableTelemetry` | bool | `false` | Opt out of anonymous usage telemetry |
 
-> [!NOTE]
-> BPA keys are **nested under `bpa.`**; `te config set bpa.onDeploy false`, not `bpaOnDeploy`. Same for `formatOptions.*`.
->
-> Active connection / profile / test-suite are **session-scoped** (see `te session`) and explicitly rejected by `te config set`; use `te connect`, `te profile`, `te test use` instead.
+**Note:** BPA keys are **nested under `bpa.`**; `te config set bpa.onDeploy false`, not `bpaOnDeploy`. Same for `formatOptions.*`. Active connection / profile / test-suite are **session-scoped** (see `te session`) and explicitly rejected by `te config set`; use `te connect`, `te profile`, `te test use` instead.
 
 **Speed knobs for batch / demo / CI runs**: each `te` invocation has ~1-2 s of process startup + model load. For pipelines that issue many sequential `te` calls (build scripts, live demos, mass-edit loops), set these once before the run:
 

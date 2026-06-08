@@ -8,14 +8,11 @@ description: Expert guidance for the cross-platform Tabular Editor CLI (the `te`
 
 The `te` CLI is a single self-contained binary that loads, edits, validates, deploys, refreshes, and tests semantic models against TMDL/BIM files, Power BI Desktop, and cloud workspaces (Power BI, Fabric, Azure AS, SSAS). It is built on the same TOMWrapper that powers Tabular Editor 3, so model edits behave like the desktop app.
 
-> [!IMPORTANT]
-> Always pass `--output-format json` when driving `te` programmatically; the default text/table output uses tables and ANSI styling that mangle in agent transcripts, while JSON is parseable and avoids rendering issues.
+**Always pass `--output-format json`** when driving `te` programmatically. The default text/table output uses tables and ANSI styling that mangle in agent transcripts; JSON is parseable and avoids rendering issues.
 
-> [!IMPORTANT]
-> Limited public preview. Preview builds stop functioning after 2026-09-30. No license is required during preview. Issues and feedback: https://github.com/TabularEditor/CLI
+**Limited public preview.** Preview builds stop functioning after 2026-09-30. No license is required during preview. Issues and feedback: https://github.com/TabularEditor/CLI
 
-> [!IMPORTANT]
-> This is a different product from the legacy Windows-only `TabularEditor.exe` (TE2). If the user invokes TE2 flag syntax (`-D`, `-S`, `-A`, `-B`, `-TMDL`, `-O`, `-C`, `-V`, `-G`), route it through the compat layer or invoke `TabularEditor.exe` directly. See `references/te2-migration.md`.
+**Not the TE2 CLI.** This is a different product from the legacy Windows-only `TabularEditor.exe` (TE2). If the user invokes TE2 flag syntax (`-D`, `-S`, `-A`, `-B`, `-TMDL`, `-O`, `-C`, `-V`, `-G`), route it through the compat layer or invoke `TabularEditor.exe` directly. See `references/te2-migration.md`.
 
 ## When to use this skill
 
@@ -106,8 +103,7 @@ Abbreviated; the full table (including `--recent`, server and database detail) i
 | `--non-interactive` | Disable prompts; fail if input missing (set in CI) |
 | `--debug` | Debug logs to stderr |
 
-> [!NOTE]
-> `--output-format` (how stdout renders) and `--serialization` (how a model is written to disk on `init`/`save`) are different flags. Do not conflate them.
+**Note:** `--output-format` (how stdout renders) and `--serialization` (how a model is written to disk on `init`/`save`) are different flags. Do not conflate them.
 
 ## Semantic modeling checklist
 

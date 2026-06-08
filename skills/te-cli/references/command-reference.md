@@ -140,8 +140,7 @@ Work with every command:
 | `--non-interactive` | Disable prompts; fail if input missing; **set in CI** |
 | `--debug` | Debug logs to stderr |
 
-> [!NOTE]
-> `--output-format` (how stdout is rendered) and `--serialization` (how models are written to disk on `init`/`save`/etc.) are **two different flags**. Don't conflate them; passing one when the other was meant gives a confusing error or silent wrong output.
+**Note:** `--output-format` (how stdout is rendered) and `--serialization` (how models are written to disk on `init`/`save`/etc.) are **two different flags**. Don't conflate them; passing one when the other was meant gives a confusing error or silent wrong output.
 
 ## Command reference (10 families)
 

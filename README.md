@@ -21,12 +21,21 @@ This repository does **not** host the Tabular Editor CLI source code or binaries
 
 This repo also ships an **AI agent skill** that teaches Claude, GitHub Copilot, and other AI coding agents how to use `te` productively. It is packaged as a Claude Code plugin and also installs as a plain skill folder for other agents.
 
-Install as a Claude Code plugin:
+Add it with the **`claude` CLI** (installs the whole skill, `references/` included):
 
 ```bash
 claude plugin marketplace add TabularEditor/CLI
 claude plugin install te-cli-agentic-use@te-cli
 ```
+
+Add it to the **`copilot` CLI** (GitHub Copilot CLI). Copilot has no install command; it auto-discovers skills from a folder, so drop the skill into one it reads:
+
+```bash
+git clone --depth 1 https://github.com/TabularEditor/CLI /tmp/te-cli
+mkdir -p ~/.copilot/skills && cp -r /tmp/te-cli/skills/te-cli ~/.copilot/skills/te-cli
+```
+
+For workspace scope, copy into `.github/skills/te-cli/` instead. Copilot also reads `~/.claude/skills/` and `~/.agents/skills/`, so the same folder placed in one of those works for both tools.
 
 See [`skills/te-cli/`](./skills/te-cli/) for the skill, its `references/`, and per-agent (Claude Code, Copilot, Codex, generic) install instructions.
 

@@ -31,6 +31,7 @@ Sharp edges and non-obvious behavior. Companion to the te-cli skill (SKILL.md).
 
 ### Behavior
 
+- **`te query` reads a DAX file with `--file`, not `-f`** (`'-f' was not matched`); input forms are `-q` inline, `--file`, or `-` stdin.
 - **`te ls` is filesystem-style, not workspace-style**. `te ls Sales` lists Sales' children (columns + measures), not "find Sales". Use `te find` for full-text search.
 - **`--save` is opt-in for editing commands** (when `interactiveEditMode` is the default `stage`). Without it, `te set`, `te add`, `te rm`, `te mv`, `te replace`, `te format`, `te script`, `te macro run` operate in memory only and don't persist. See the Staging model section in SKILL.md for the full picture and the `save` / `revert` alternatives.
 - **`te validate` does not exercise partition M**; it checks structural/DAX validity, not whether `Table.FromRows` literals parse or SQL endpoints respond. A model with broken partitions still passes `te validate` cleanly. Verify partitions explicitly after table creation.

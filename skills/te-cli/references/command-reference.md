@@ -276,13 +276,13 @@ te format -e "SUM ( Sales[Amount] )"                 # inline preview
 
 | Command | Purpose | Key flags |
 |---|---|---|
-| `te query` | DAX query | `-q <dax>` or `-f <file.dax>`, `--limit <N>` (default 100), `-o, --output-file <file>` (extension picks format: `.csv\|.tsv\|.json\|.dax`), `--trace`, `--cold`, `--plan`, `--runs <N>` (benchmark), `--no-validate` |
+| `te query` | DAX query | `-q <dax>` or `--file <file.dax>`, `--limit <N>` (default 100), `-o, --output-file <file>` (extension picks format: `.csv\|.tsv\|.json\|.dax`), `--trace`, `--cold`, `--plan`, `--runs <N>` (benchmark), `--no-validate` |
 | `te script` | Run C# script (TOM) | `-S <file>` (repeatable, `.cs`/`.csx`), `-e <code>` (inline, `-` = stdin), `--save`, `--save-to`, `--serialization`, `--dry-run`, `--timeout <s>` |
 | `te macro <sub>` | TE3 macros | `list`, `run <name-or-id>` (with `--on <obj-paths>`, `--save`), `add`, `set`, `rm`, `sort` |
 
 ```bash
 te query -q "EVALUATE TOPN(5, 'Sales')" -s ws -d model
-te query -f query.dax --output-format json                       # global --output-format controls stdout format
+te query --file query.dax --output-format json                   # global --output-format controls stdout format
 te query -q "EVALUATE Sales" --output-file results.csv           # writes CSV/TSV/JSON/DAX based on extension
 te query -q "EVALUATE Sales" --runs 5 --cold --plan
 te script -S fix.cs --save

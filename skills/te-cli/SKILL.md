@@ -78,7 +78,7 @@ The highest-frequency tasks in their most concise form. Full flags are in `refer
 2. **Search the model (fastest)**: `te find "<text>" --in names --paths-only -m ./model`. Scope `--in` to `names`, `expressions`, `descriptions`, `displayFolders`, ...; `--in expressions` walks every DAX and M expression. `--paths-only` is the fast, pipeable form. Structural lookups use wildcards (`te ls "Sales/*Amount"`). Relationships are not `te ls`-enumerable (known gap); list them with `te query -q "EVALUATE INFO.VIEW.RELATIONSHIPS()"`.
 3. **Query the model**:
    - Inline DAX: `te query -q "EVALUATE TOPN(10, Sales)" -m ./model`
-   - From a `.dax` file: `te query -f query.dax -m ./model`
+   - From a `.dax` file: `te query --file query.dax -m ./model`
    - Save results (format picked by extension): `--output-file out.csv` (csv/tsv/json/dax); machine-readable stdout: `--output-format json`.
 4. **Make a change** (stages in memory; `--save` persists): `te set Sales/Revenue -q expression -i "SUM(Sales[Amount])" --save`. Also `te add`, `te rm`, `te mv`. Read the current value first with `te get Sales/Revenue -q expression`.
 5. **Make bulk changes**:

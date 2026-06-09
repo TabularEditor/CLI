@@ -10,6 +10,8 @@ The `te` CLI is a single self-contained binary that loads, edits, validates, dep
 
 **Always pass `--output-format json`** when driving `te` programmatically. The default text/table output uses tables and ANSI styling that mangle in agent transcripts; JSON is parseable and avoids rendering issues.
 
+**Use `te` for ALL model work — read, write, and query.** Read with `te ls`/`get`/`find`/`deps`, change with `te set`/`add`/`rm`/`mv`/`replace`/`script`, query with `te query`. Do NOT hand-edit `.tmdl`/`.bim` files, query through `fab`, or reach for other tools: only `te` goes through TOMWrapper (DAX validation, save gate, `te mv` cascades reference fixups), so anything else silently breaks references or drifts from the live model. In `-w` workspace mode the local folder is a mirror: read it to review the diff, but make every change via `te`.
+
 **Limited public preview.** Preview builds stop functioning after 2026-09-30. No license is required during preview. Issues and feedback: https://github.com/TabularEditor/CLI
 
 **Not the TE2 CLI.** This is a different product from the legacy Windows-only `TabularEditor.exe` (TE2). If the user invokes TE2 flag syntax (`-D`, `-S`, `-A`, `-B`, `-TMDL`, `-O`, `-C`, `-V`, `-G`), route it through the compat layer or invoke `TabularEditor.exe` directly. See `references/te2-migration.md`.

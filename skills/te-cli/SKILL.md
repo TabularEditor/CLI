@@ -168,6 +168,7 @@ Bundled (load as needed):
 - `references/semantic-modeling-practices.md` - modeling best practices tied to `te` commands, with sources
 - `references/workflows.md` - multi-step recipes (table + M partition, format conversions, deploy, refresh, perspectives, translations, incremental refresh, field parameters)
 - `references/gotchas.md` - path/property asymmetries, output shapes, behavior traps
+- `references/ri-violations.md` - detect/interpret/locate referential-integrity violations (`te vertipaq` `riViolations` semantics, `EXCEPT` vs `RELATED` detectors, common causes)
 - `references/config-cicd-env.md` - config keys, speed knobs, CI/CD (GitHub Actions, Azure DevOps), output formats, exit codes, environment variables
 - `references/te2-migration.md` - TE2 compat activation and full flag mapping
 - `references/pbir-cli-tandem.md` - using `te` with the `pbir` CLI (rename and refactor propagation, thin reports, validation pairing)

@@ -2,6 +2,29 @@
 
 All notable changes to the `te-cli` skill are documented in this file.
 
+## [0.3.0] - 2026-07-02
+
+Aligns the skill with CLI 0.6.0.
+
+### Changed
+
+- Rewrote every command example to use long-form canonical verbs (`te list`, `te remove`, `te move`, `te config list`), with a short callout that Unix aliases (`ls`, `rm`, `mv`) still work everywhere. `te move` also accepts `rename`. `te add` has no short alias.
+- Replaced every `--serialization te-folder` occurrence with `database.json` (BREAKING CLI rename in 0.6.0). The mirror on `te connect --workspace-format` and the TE2 migration table (`-F <dir>`) both track the new spelling.
+- Removed the "known gap" language for `te list Relationships`: the CLI now enumerates relationships correctly, so SKILL.md and `references/command-reference.md` list `Relationships` as an enumerable container next to `Tables`, `Measures`, etc. The gotcha entry now covers the residual issue (system-assigned relationship names) rather than the wiring gap.
+- Dropped the "`--source-type m` on models with a provider data source" pre-validation error from `references/workflows.md`; the CLI now accepts mixed-partition models to match TE3 desktop.
+
+### Added
+
+- `te query "<dax>"` positional-DAX shorthand documented in the quickstart and `references/command-reference.md`; explicit `-q` still wins when both are supplied.
+- `te macro set` now accepts repeated `-q <property> -i <value>` pairs in one call, with a worked example in `references/command-reference.md`.
+- `te interactive` batch mode (redirected stdin) and its new flags (`--no-banner`, `--echo`, `--batch` / `--no-batch`) added to `references/command-reference.md`, with a batch-mode example block.
+- New `launchInteractiveMode` config key (`Auto` / `Never` / `Always`) documented in `references/config-cicd-env.md`.
+- `--serialization tmsl` documented as an alias for `bim` (canonical) on `te save`, `te init`, and `te connect --workspace-format`.
+- Note that `te bpa run` text output now includes a `Rule ID` column, so IDs can be copied straight into `--fix --rule <id>`.
+- Note that `te vertipaq` surfaces a clear error on unknown table/column filters (with up to 10 candidates), and its output is pipe-safe (`te vertipaq > report.txt`, `te vertipaq | less`).
+
+[0.3.0]: https://github.com/TabularEditor/CLI/releases/tag/skill-v0.3.0
+
 ## [0.2.0] - 2026-06-08
 
 ### Changed

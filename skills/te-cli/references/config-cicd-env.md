@@ -6,7 +6,7 @@ Companion to the te-cli skill (SKILL.md).
 
 | Command | Purpose |
 |---|---|
-| `te config show [--output-format json]` | Show all settings |
+| `te config list [--output-format json]` | List all settings (previously `te config show`; renamed for verb consistency with `te list`) |
 | `te config paths` | Resolved file paths (macros, BPA rules, config) |
 | `te config init [--force]` | Create default config |
 | `te config set <key> <value>` | Update setting |
@@ -36,6 +36,7 @@ Companion to the te-cli skill (SKILL.md).
 | `formatOptions.skipSpaceAfterFunction` | bool | `false` | `SUM(x)` instead of `SUM (x)` |
 | `formatOptions.useSqlBiDaxFormatter` | bool | `false` | Use SQLBI's online formatter instead of the in-house one |
 | `interactiveEditMode` | enum | `stage` | Default for mutating commands: `stage` (in-memory only), `save` (auto-persist), `revert` (auto-roll-back). Overridden per-command by `--save`/`--stage`/`--revert` |
+| `launchInteractiveMode` | enum | `Auto` | Controls whether invoking `te` with no subcommand launches the interactive REPL: `Auto` (launch on a TTY, print help when stdout is piped/redirected), `Never` (always print help), `Always` (always launch the REPL) |
 | `hidePreviewNotice` | bool | `false` | Suppress yellow preview banner |
 | `spinner` | bool | `true` | Animated progress (disable for CI) |
 | `debug` | bool | `false` | Debug logs to stderr |
@@ -110,14 +111,14 @@ Same commands, swap `--ci github` for `--ci azdo` (or `vsts`/`azure-devops`; all
 - `text`: forces human-readable
 - `json`: always valid JSON to stdout; errors/warnings to stderr (won't contaminate)
 - `csv`: tabular results (only `query`, `bpa run`, `vertipaq`)
-- `tmsl` (alias `bim`): emit the resolved object(s) as TMSL/BIM JSON; supported on `te get` and `te ls`
-- `tmdl`: emit the resolved object as TMDL; supported on `te get` (single named object only) and `te ls`
+- `bim` (alias `tmsl`): emit the resolved object(s) as BIM/TMSL JSON; supported on `te get` and `te list`. `bim` is canonical (matches the `.bim` file extension) but the two names are synonyms everywhere the flag appears.
+- `tmdl`: emit the resolved object as TMDL; supported on `te get` (single named object only) and `te list`
 
 ```bash
-te get Sales --output-format tmdl           # Sales table as TMDL
-te get "Sales/Revenue" --output-format bim  # Single measure as TMSL fragment
-te ls Tables --output-format bim            # All tables as TMSL/BIM
-te ls Measures --output-format tmdl         # Every measure across the model, in TMDL
+te get Sales --output-format tmdl             # Sales table as TMDL
+te get "Sales/Revenue" --output-format bim    # Single measure as TMSL fragment
+te list Tables --output-format bim            # All tables as BIM/TMSL
+te list Measures --output-format tmdl         # Every measure across the model, in TMDL
 ```
 
 **`--ci` formats** (orthogonal to `--output-format`; emits CI-system logging commands to stderr on `validate`, `bpa run`, `deploy`, `test run`, `script`):
@@ -137,7 +138,7 @@ Errors and warnings are accumulated, so a non-zero exit code reflects total erro
 
 ```bash
 # JSON-safe pipeline
-te ls --type measure --output-format json | jq -r '.[].path'
+te list --type measure --output-format json | jq -r '.[].path'
 
 # Bash conditional on diff
 if te diff old.bim new.bim --output-format json > /dev/null; then
@@ -159,4 +160,3 @@ fi
 | `TE_BPA_RULES` | Override path to a BPA rules file (precedence: explicit `--rules` > `TE_BPA_RULES` > `bpa.rules` config > CWD `BPARules.json`) |
 | `TE_BPA_CONFIG` | Override path to a `.te-bpa.json` gate-config (for deploy/save BPA gating) |
 | `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID` | SPN credentials (used with `--auth env`) |
-

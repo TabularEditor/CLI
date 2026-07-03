@@ -51,9 +51,10 @@ te add _Measures -t Table --columns "_Measures:String" \
 
 **Pre-validation errors** (fail before mutation):
 - `--source-type calculated` paired with `-t Table` → use `-t CalculatedTable`
-- `--source-type m` on a model with a provider data source → remove the DS, or use `--source-type query`
 - `--source-type m` on Compatibility Level < 1400 → upgrade the model
 - `--source-type` combined with `--mode directlake` → DL/Entity partitions are picked automatically
+
+**Note:** `--source-type m` on a model that already has a provider data source is now supported (matches TE3 desktop's mixed-partition support); the CLI no longer rejects that combination.
 
 **Updating an existing partition's M** after creation: `te set Sales/Partitions/Sales -q MExpression -i "<M>" --save` (note `MExpression`, not `expression`, despite `te get` displaying the property as `expression`).
 
@@ -93,8 +94,8 @@ te refresh --table Sales --partition "Sales.2024" --type full --dry-run > refres
 
 ```bash
 te deps --unused --hidden                                               # discover candidates
-te rm Sales/UnusedMeasure --dry-run                                     # confirm impact
-te rm Sales/UnusedMeasure --if-exists --save                            # idempotent removal
+te remove Sales/UnusedMeasure --dry-run                                 # confirm impact
+te remove Sales/UnusedMeasure --if-exists --save                        # idempotent removal
 ```
 
 ### Mirror remote workspace for local editing
@@ -129,7 +130,7 @@ te test compare                                                         # detect
 
 ## Additional authoring workflows
 
-Modeling-driven recipes (mark a date table, calculation groups, RLS roles) live in semantic-modeling-practices.md, paired with the rationale for each. The recipes below are the remaining structural-object workflows. The `te` CLI is in preview; confirm any flag or path shape below with `te <command> --help` (or `te ls <container>` to see the exact child-path form) before scripting it in a pipeline.
+Modeling-driven recipes (mark a date table, calculation groups, RLS roles) live in semantic-modeling-practices.md, paired with the rationale for each. The recipes below are the remaining structural-object workflows. The `te` CLI is in preview; confirm any flag or path shape below with `te <command> --help` (or `te list <container>` to see the exact child-path form) before scripting it in a pipeline.
 
 ### Perspectives
 
@@ -139,7 +140,7 @@ Perspectives are saved field-list views. Create the perspective, then add tables
 te add "Perspectives/Sales View" -t Perspective -m ./model --save
 te add "Perspectives/Sales View/Sales" -m ./model --save                 # add the Sales table to the perspective
 te add "Perspectives/Sales View/_Measures/Revenue" -m ./model --save     # add a single measure
-te ls "Perspectives/Sales View"                                          # confirm membership
+te list "Perspectives/Sales View"                                        # confirm membership
 ```
 
 ### Translations and cultures

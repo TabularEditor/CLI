@@ -6,7 +6,7 @@ Two rules before every command: model edits in `te` stage in memory and need `--
 
 ## 1. Rename a measure (model) and repair report bindings
 
-The most common refactor. `te mv` renames the object only; it does not rewrite DAX that calls the old name, so `te replace --in expressions` is a mandatory second step.
+The most common refactor. `te move` renames the object only; it does not rewrite DAX that calls the old name, so `te replace --in expressions` is a mandatory second step.
 
 ```bash
 # te: confirm the object and find DAX that calls it by name
@@ -15,7 +15,7 @@ te find "OldRevenue" --in expressions -m ./Model.SemanticModel   # measures, cal
 te deps "_Measures/OldRevenue" --downstream -m ./Model.SemanticModel   # blast radius
 
 # te: rename the object, then fix every DAX reference to the old name
-te mv "_Measures/OldRevenue" "_Measures/Revenue" --save -m ./Model.SemanticModel
+te move "_Measures/OldRevenue" "_Measures/Revenue" --save -m ./Model.SemanticModel
 te replace "OldRevenue" "Revenue" --in expressions --save -m ./Model.SemanticModel
 
 # te: gate before touching the report
@@ -36,9 +36,9 @@ Per-step purpose:
 
 ```yaml
 te find --in names: confirm the measure exists and get its path before touching anything
-te find --in expressions: discover DAX that calls the old name by value; te mv will NOT fix these
+te find --in expressions: discover DAX that calls the old name by value; te move will NOT fix these
 te deps --downstream: list measures/columns downstream to show the full impact
-te mv: rename the TOM object (the name property only)
+te move: rename the TOM object (the name property only)
 te replace --in expressions: rewrite every DAX call of the old name across the model; needs --save
 te validate --errors-only: confirm no broken DAX references remain
 pbir fields find: locate visuals, filters, and CF entries bound to the old reference
@@ -49,12 +49,12 @@ pbir validate --fields: confirm all bindings resolve; zero broken references exp
 
 ## 2. Rename a column (model) and repair report bindings
 
-Same shape as a measure rename, plus column-only metadata to check after `te mv`.
+Same shape as a measure rename, plus column-only metadata to check after `te move`.
 
 ```bash
 te find "OldColumnName" --in names --paths-only -m ./Model.SemanticModel   # check for same name on other tables
 te deps "Date/OldColumnName" --downstream -m ./Model.SemanticModel
-te mv "Date/OldColumnName" "Date/NewColumnName" --save -m ./Model.SemanticModel
+te move "Date/OldColumnName" "Date/NewColumnName" --save -m ./Model.SemanticModel
 te replace "OldColumnName" "NewColumnName" --in expressions --save -m ./Model.SemanticModel
 te validate -m ./Model.SemanticModel --errors-only
 
@@ -68,7 +68,7 @@ After the rename, verify two column relationships that store the old name as a p
 
 ```bash
 te get Date/SomeOtherColumn -q sortByColumn -m ./Model.SemanticModel   # update with te set if it broke
-te ls "Date/Geography/Levels" -m ./Model.SemanticModel                  # hierarchy levels take a column property
+te list "Date/Geography/Levels" -m ./Model.SemanticModel                  # hierarchy levels take a column property
 ```
 
 ## 3. Rename a table (model) and repair all report bindings
@@ -79,7 +79,7 @@ te ls "Date/Geography/Levels" -m ./Model.SemanticModel                  # hierar
 te find "FACT_Sales" --in names -m ./Model.SemanticModel
 te find "FACT_Sales" --in expressions -m ./Model.SemanticModel
 te replace "FACT_Sales" "Sales" --in expressions --save -m ./Model.SemanticModel
-te mv FACT_Sales Sales --save -m ./Model.SemanticModel
+te move FACT_Sales Sales --save -m ./Model.SemanticModel
 te validate -m ./Model.SemanticModel --errors-only
 
 # pbir: list fields, then replace each FACT_Sales.* binding individually
@@ -93,16 +93,16 @@ pbir validate "Report.Report" --fields
 ```yaml
 te replace --in expressions: rewrites DAX text only; apostrophe-quoted refs need the quotes in the find term, e.g. te replace "'FACT_Sales'" "'Sales'" --in expressions --save
 te replace substring risk: if the old name is a substring of another identifier, add --case-sensitive or --regex with anchors and review the preview
-relationship endpoints: te mv renames the table object; confirm relationship integrity with te validate
+relationship endpoints: te move renames the table object; confirm relationship integrity with te validate
 ```
 
 ## 4. Move a measure to a different table and update bindings
 
-`te mv` across tables is the only way to change an object's table ownership. Only fully table-qualified DAX (`SourceTable[Measure]`) breaks; unqualified `[Measure]` keeps resolving model-wide.
+`te move` across tables is the only way to change an object's table ownership. Only fully table-qualified DAX (`SourceTable[Measure]`) breaks; unqualified `[Measure]` keeps resolving model-wide.
 
 ```bash
 te deps "SourceTable/MeasureName" --downstream -m ./Model.SemanticModel
-te mv "SourceTable/MeasureName" "TargetTable/MeasureName" --save -m ./Model.SemanticModel
+te move "SourceTable/MeasureName" "TargetTable/MeasureName" --save -m ./Model.SemanticModel
 te find "SourceTable" --in expressions --paths-only -m ./Model.SemanticModel   # decide if te replace is needed
 te validate -m ./Model.SemanticModel --errors-only
 
@@ -111,7 +111,7 @@ pbir fields replace "Report.Report" --from "SourceTable.MeasureName" --to "Targe
 pbir validate "Report.Report" --fields
 ```
 
-Display folder does not move with `te mv`; reset it on the moved measure if it should match the new table's folder structure (`te set "TargetTable/MeasureName" -q displayFolder -i "<folder>" --save`).
+Display folder does not move with `te move`; reset it on the moved measure if it should match the new table's folder structure (`te set "TargetTable/MeasureName" -q displayFolder -i "<folder>" --save`).
 
 ## 5. Scaffold a model, then create a thin report against it
 
@@ -155,7 +155,7 @@ pbir report rebind "Sales.Report" --local "../Sales.SemanticModel"
 ## 6. Add a measure to a live model, then surface it in a bound report
 
 ```bash
-te ls Measures -m ./Model.SemanticModel               # check naming conventions, avoid duplicates
+te list Measures -m ./Model.SemanticModel               # check naming conventions, avoid duplicates
 te add "_Measures/Revenue YoY" -t Measure -i "DIVIDE([Revenue], CALCULATE([Revenue], SAMEPERIODLASTYEAR('Date'[Date]))) - 1" --save -m ./Model.SemanticModel
 te set "_Measures/Revenue YoY" -q formatString -i "0.0%" --save -m ./Model.SemanticModel
 te set "_Measures/Revenue YoY" -q displayFolder -i "Revenue" --save -m ./Model.SemanticModel
@@ -185,15 +185,15 @@ pbir validate "Report.Report"
 pbir visuals bind "Report.Report/Page.Page/Visual.Visual" -r "Category:Sales.OldRegionCode"
 
 # te: delete only after the report is clean
-te rm Sales/OldRegionCode --dry-run -m ./Model.SemanticModel
-te rm Sales/OldRegionCode --if-exists --save -m ./Model.SemanticModel
+te remove Sales/OldRegionCode --dry-run -m ./Model.SemanticModel
+te remove Sales/OldRegionCode --if-exists --save -m ./Model.SemanticModel
 te validate -m ./Model.SemanticModel --errors-only
 te deploy ./Model.SemanticModel -s "MyWorkspace" -d "Sales Model" --force --non-interactive
 ```
 
 ```yaml
 removal granularity: pbir visuals bind -r removes one role binding on one visual; prefer it over a report- or page-wide pbir fields clear, which strips bindings broadly and can leave visuals with empty roles
-sort-by dependency: te rm fails if the column is another column's sortByColumn target; clear that first with te set OtherColumn -q sortByColumn -i "" --save
+sort-by dependency: te remove fails if the column is another column's sortByColumn target; clear that first with te set OtherColumn -q sortByColumn -i "" --save
 ```
 
 ## 8. Split a thick PBIP, edit the model, keep the report in sync
@@ -230,9 +230,9 @@ pbir publish "Sales.Report" "MyWorkspace/Sales" -f                    # position
 
 ```yaml
 te owns:
-  - object identity (te mv / te set -q name) and DAX expression repair (te replace --in expressions)
+  - object identity (te move / te set -q name) and DAX expression repair (te replace --in expressions)
   - dependency analysis (te deps), validation (te validate), BPA (te bpa run), deploy (te deploy)
-  - te mv renames the object only; it does NOT rewrite DAX that calls the old name
+  - te move renames the object only; it does NOT rewrite DAX that calls the old name
   - te replace previews by default; pass --save to persist; it is literal text find-replace (use --regex / --case-sensitive for substring or quoted-name cases)
   - te find --in expressions covers measure DAX, calc columns, KPI expressions, partition M, role filters, and calc-group selection; it does NOT see report JSON
 

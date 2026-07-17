@@ -119,13 +119,15 @@ te script -S ./scripts/format-all-dax.csx -s ws -d model --save
 echo "foreach (var t in Model.Tables) t.Name = t.Name.Replace(\"_\", \" \");" | te script -e - --save
 ```
 
-### Snapshot + compare for regression testing
+### Snapshot + diff for regression testing
 
 ```bash
-te test snapshot                                                        # capture baseline
-# … make changes …
-te test compare                                                         # detect drift
+te test snapshot --save baseline.snapshot.json -s ws -d model           # capture baseline
+# … make changes, redeploy …
+te test snapshot --diff baseline.snapshot.json --tolerance 0.001 -s ws -d model   # detect drift
 ```
+
+For A/B across two deployed models (e.g. candidate vs prod): `te test compare --source-a prod-ws/model --source-b test-ws/model`. Suite authoring and assertion types: `testing.md`.
 
 
 ## Additional authoring workflows
@@ -155,12 +157,18 @@ te set "_Measures/Revenue" -q "TranslatedDescriptions[fr-FR]" -i "Revenu net" -m
 
 ### Incremental refresh setup
 
-`te incremental-refresh` manages the policy on a table (`show`, `set`, `remove`, `apply`). A policy requires the `RangeStart` and `RangeEnd` `NamedExpression` parameters in the model first; the partition M must filter on them. The exact flags for `set` (granularity, rolling/archive window, detect-data-changes) are not pinned in this skill, so read them from the binary before use:
+`te incremental-refresh` manages the policy on a table (`show`, `set`, `remove`, `apply`). A policy requires the `RangeStart` and `RangeEnd` `NamedExpression` parameters in the model first; the partition M (or `--source-expression`) must filter on them.
 
 ```bash
-te incremental-refresh set --help          # confirm the granularity / window / detect-changes flag names
+te incremental-refresh set Sales \
+  --rolling-window-periods 5 --rolling-window-granularity year \
+  --incremental-periods 10 --incremental-granularity day \
+  -m ./model --save
+# other flags: --incremental-offset <N>, --mode import|hybrid,
+#   --source-expression "<M>" / --source-expression-file <file.m>,
+#   --polling-expression "<M>" / --polling-expression-file <file.m>  (detect data changes)
 te incremental-refresh show Sales -m ./model
-te incremental-refresh apply Sales -m ./model      # re-evaluate the policy, create/expand partitions
+te incremental-refresh apply Sales -s ws -d model    # re-evaluate the policy, create/expand partitions on the server
 ```
 
 ### Field parameters

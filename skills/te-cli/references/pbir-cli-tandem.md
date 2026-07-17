@@ -6,17 +6,18 @@ Two rules before every command: model edits in `te` stage in memory and need `--
 
 ## 1. Rename a measure (model) and repair report bindings
 
-The most common refactor. `te move` renames the object only; it does not rewrite DAX that calls the old name, so `te replace --in expressions` is a mandatory second step.
+The most common refactor. `te move` renames the object AND cascades bracketed DAX references inside the model (it reports the cascading change count). What it cannot fix: string-literal name comparisons (`SELECTEDMEASURENAME() = "OldRevenue"`), names embedded in descriptions or annotations, and anything in report JSON. Verify with `te find` after the move; reach for `te replace` only on reviewed leftovers.
 
 ```bash
 # te: confirm the object and find DAX that calls it by name
 te find "OldRevenue" --in names --paths-only -m ./Model.SemanticModel
-te find "OldRevenue" --in expressions -m ./Model.SemanticModel   # measures, calc columns, KPIs, role filters, calc-group selection
 te deps "_Measures/OldRevenue" --downstream -m ./Model.SemanticModel   # blast radius
 
-# te: rename the object, then fix every DAX reference to the old name
+# te: rename; bracketed DAX refs cascade automatically
 te move "_Measures/OldRevenue" "_Measures/Revenue" --save -m ./Model.SemanticModel
-te replace "OldRevenue" "Revenue" --in expressions --save -m ./Model.SemanticModel
+
+# te: check for leftovers the cascade cannot see (string literals, descriptions); replace only what review confirms
+te find "OldRevenue" --in all -m ./Model.SemanticModel
 
 # te: gate before touching the report
 te validate -m ./Model.SemanticModel --errors-only
@@ -36,10 +37,9 @@ Per-step purpose:
 
 ```yaml
 te find --in names: confirm the measure exists and get its path before touching anything
-te find --in expressions: discover DAX that calls the old name by value; te move will NOT fix these
 te deps --downstream: list measures/columns downstream to show the full impact
-te move: rename the TOM object (the name property only)
-te replace --in expressions: rewrite every DAX call of the old name across the model; needs --save
+te move: rename the TOM object; bracketed DAX references cascade with it
+te find --in all (after): surface string-literal / description leftovers the cascade cannot rewrite
 te validate --errors-only: confirm no broken DAX references remain
 pbir fields find: locate visuals, filters, and CF entries bound to the old reference
 pbir fields replace --dry-run: preview the report rewrite
@@ -54,8 +54,8 @@ Same shape as a measure rename, plus column-only metadata to check after `te mov
 ```bash
 te find "OldColumnName" --in names --paths-only -m ./Model.SemanticModel   # check for same name on other tables
 te deps "Date/OldColumnName" --downstream -m ./Model.SemanticModel
-te move "Date/OldColumnName" "Date/NewColumnName" --save -m ./Model.SemanticModel
-te replace "OldColumnName" "NewColumnName" --in expressions --save -m ./Model.SemanticModel
+te move "Date/OldColumnName" "Date/NewColumnName" --save -m ./Model.SemanticModel   # DAX refs cascade
+te find "OldColumnName" --in all -m ./Model.SemanticModel                  # string-literal / description leftovers only
 te validate -m ./Model.SemanticModel --errors-only
 
 pbir fields find "Report.Report" -f "Date.OldColumnName"
@@ -73,13 +73,12 @@ te list "Date/Geography/Levels" -m ./Model.SemanticModel                  # hier
 
 ## 3. Rename a table (model) and repair all report bindings
 
-`pbir fields replace` works per `Table.Field`, not per table. There is no bulk table-prefix rewrite. Enumerate the affected fields first, then loop. Run the model-internal DAX rewrite before the rename so expressions are consistent at save time.
+`pbir fields replace` works per `Table.Field`, not per table. There is no bulk table-prefix rewrite. Enumerate the affected fields first, then loop.
 
 ```bash
 te find "FACT_Sales" --in names -m ./Model.SemanticModel
-te find "FACT_Sales" --in expressions -m ./Model.SemanticModel
-te replace "FACT_Sales" "Sales" --in expressions --save -m ./Model.SemanticModel
-te move FACT_Sales Sales --save -m ./Model.SemanticModel
+te move FACT_Sales Sales --save -m ./Model.SemanticModel            # quoted 'FACT_Sales' DAX refs cascade
+te find "FACT_Sales" --in all -m ./Model.SemanticModel              # leftovers: string literals, partition M, descriptions
 te validate -m ./Model.SemanticModel --errors-only
 
 # pbir: list fields, then replace each FACT_Sales.* binding individually
@@ -91,19 +90,19 @@ pbir validate "Report.Report" --fields
 ```
 
 ```yaml
-te replace --in expressions: rewrites DAX text only; apostrophe-quoted refs need the quotes in the find term, e.g. te replace "'FACT_Sales'" "'Sales'" --in expressions --save
-te replace substring risk: if the old name is a substring of another identifier, add --case-sensitive or --regex with anchors and review the preview
+te move cascade: quoted DAX refs ('FACT_Sales'[Amount], COUNTROWS('FACT_Sales')) are rewritten by the rename
+te replace scope (leftovers only): string literals, partition M, descriptions; apostrophe-quoted find terms and --case-sensitive / --regex anchors avoid substring hits; review the preview before --save
 relationship endpoints: te move renames the table object; confirm relationship integrity with te validate
 ```
 
 ## 4. Move a measure to a different table and update bindings
 
-`te move` across tables is the only way to change an object's table ownership. Only fully table-qualified DAX (`SourceTable[Measure]`) breaks; unqualified `[Measure]` keeps resolving model-wide.
+`te move` across tables is the only way to change an object's table ownership. Unqualified `[Measure]` references keep resolving model-wide, but fully table-qualified DAX (`SourceTable[Measure]`) does NOT cascade on a cross-table move; the save gate rejects the move with `DAX0002` if one exists. Fix the qualified references first, then move.
 
 ```bash
 te deps "SourceTable/MeasureName" --downstream -m ./Model.SemanticModel
+te find "SourceTable[MeasureName]" --in expressions -m ./Model.SemanticModel   # qualified refs block the move; rewrite them first
 te move "SourceTable/MeasureName" "TargetTable/MeasureName" --save -m ./Model.SemanticModel
-te find "SourceTable" --in expressions --paths-only -m ./Model.SemanticModel   # decide if te replace is needed
 te validate -m ./Model.SemanticModel --errors-only
 
 pbir fields find "Report.Report" -f "SourceTable.MeasureName"
@@ -232,7 +231,7 @@ pbir publish "Sales.Report" "MyWorkspace/Sales" -f                    # position
 te owns:
   - object identity (te move / te set -q name) and DAX expression repair (te replace --in expressions)
   - dependency analysis (te deps), validation (te validate), BPA (te bpa run), deploy (te deploy)
-  - te move renames the object only; it does NOT rewrite DAX that calls the old name
+  - te move cascades bracketed DAX references inside the model on rename; it does NOT rewrite string-literal name comparisons, descriptions, or table-qualified refs on a CROSS-TABLE move (the save gate rejects those)
   - te replace previews by default; pass --save to persist; it is literal text find-replace (use --regex / --case-sensitive for substring or quoted-name cases)
   - te find --in expressions covers measure DAX, calc columns, KPI expressions, partition M, role filters, and calc-group selection; it does NOT see report JSON
 

@@ -47,7 +47,7 @@ Column cardinality (distinct value count), not row count, is the primary driver 
 
 | Practice | Why | `te` command |
 |---|---|---|
-| Profile by size and fix the biggest columns first | a high-cardinality column's dictionary alone can exceed 90% of its storage | `te vertipaq --columns --detail --top 20 -m ./model`; scope with `te vertipaq Sales` |
+| Profile by size and fix the biggest columns first | a high-cardinality column's dictionary alone can exceed 90% of its storage | `te vertipaq --columns --detail --top 20 -s ws -d model` (stats live in the deployed database; offline: `--import stats.vpax`); scope with `te vertipaq Sales` |
 | Split a high-cardinality datetime into Date and Time parts (in Power Query, not a calculated column) | a sub-second datetime is near-unique; one real case went from 38.1% of DB to 0.3% (>99% reduction); a calculated column over the original reclaims nothing | fix in Power Query, then verify with `te vertipaq Sales/OrderDate` |
 | Prefer narrow integer surrogate keys for relationship columns | the win is a smaller dictionary for the same distinct count, NOT an encoding switch (VertiPaq always hash-encodes relationship columns); SQLBI measured a relationship dropping from 4 MB to under 50 KB | `te set Sales/CustomerKey -q dataType -i int64 --save` |
 | Use a Date data type (not integer YYYYMMDD) for the date key | SQLBI's 2B-row test found storage and scan essentially identical, so usability decides: Date enables native arithmetic and classic time intelligence | `te set Date/Date -q dataType -i dateTime --save` |
@@ -94,10 +94,10 @@ Time intelligence needs one dedicated, shared Date dimension that all facts rela
 | Keep blank/null dates in the fact rather than inflating the Date table; guard comparisons with `NOT ISBLANK()` | blanks on the many side add a `(Blank)` slicer row and distort totals, and comparison operators treat `BLANK` as a pre-1900 date | author guarded measures with `te add`/`te set -q expression` |
 | Standardize one org-wide Date definition (warehouse DimDate, dataflow, or parameterized DAX) | a shared definition prevents fiscal-year, week-numbering, and naming drift across models | import the warehouse DimDate where one exists |
 
-`te validate` checks structural and DAX validity but does not check date contiguity. Probe for gaps with a query:
+`te validate` checks structural and DAX validity but does not check date contiguity. Probe for gaps with a query against the deployed model (`te query` cannot execute DAX on a local `-m` path):
 
 ```bash
-te query -q "EVALUATE ROW(\"Gap\", COUNTROWS(Date) - (MAX(Date[Date]) - MIN(Date[Date]) + 1))" -m ./model
+te query "EVALUATE ROW(\"Gap\", COUNTROWS(Date) - (MAX(Date[Date]) - MIN(Date[Date]) + 1))" -s ws -d model
 ```
 
 A nonzero `Gap` means the date column is not contiguous.

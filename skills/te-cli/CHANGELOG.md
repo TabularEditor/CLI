@@ -22,6 +22,22 @@ Aligns the skill with CLI 0.6.0.
 - `--serialization tmsl` documented as an alias for `bim` (canonical) on `te save`, `te init`, and `te connect --workspace-format`.
 - Note that `te bpa run` text output now includes a `Rule ID` column, so IDs can be copied straight into `--fix --rule <id>`.
 - Note that `te vertipaq` surfaces a clear error on unknown table/column filters (with up to 10 candidates), and its output is pipe-safe (`te vertipaq > report.txt`, `te vertipaq | less`).
+- `references/testing.md`: test-suite authoring guide distilled from `te test spec` (`.test.yaml` anatomy, all assertion types, tolerance semantics, tags, matrix expansion), snapshot regression (`--save`/`--diff`), and A/B compare across two deployed models (`--source-a`/`--source-b`).
+- Rebuilt the CI/CD section in `references/config-cicd-env.md` around the two-pipelines-one-artifact shape: PR validation (validate + BPA on the repo artifact, no secrets) vs deploy + post-deploy regression tests per environment; one-time Fabric service-principal setup (XMLA read-write, workspace roles), public-CDN runner install step, full GitHub Actions and Azure DevOps examples, and promotion/approval-gate patterns.
+- Documented the public CDN download (`https://cdn.tabulareditor.com/files/cli/latest/te-<os>-<arch>.tar.gz`, `.zip` on Windows; GET only, HEAD returns 404) and corrected the macOS/Linux archive extension to `.tar.gz`.
+- Documented the new global `--error-format text|json` flag, `te validate --server-only`, `te add` repeatable `-q <prop> -i <value>` pairs (set extra properties at creation), `te add --mode dual` and `--file`/`--connection-string`, and the short type aliases (`CalcTable`, `CalcColumn`, `CalcGroup`, `CalcItem`).
+- Pinned the `te incremental-refresh set` flags (`--rolling-window-periods/-granularity`, `--incremental-periods/-granularity/-offset`, `--mode import|hybrid`, `--source-expression(-file)`, `--polling-expression(-file)`), replacing the "read them from the binary" placeholder.
+
+### Fixed
+
+- `te diff` exit codes were documented inverted; the binary exits 0 identical, 1 models differ, 2 error. Corrected the reference tables and the shell example that branched on exit 2.
+- `te query` was shown executing against a local `-m` path; DAX execution needs a deployed model (`-s`/`-d` or an active connection). Same for `te vertipaq` (offline exception: `--import <file.vpax>`), `te refresh`, `te test run`/`snapshot`. Added a critical rule and a gotcha separating metadata commands (local OK) from DAX-executing commands.
+- `te query -f` corrected to `--file` (no short form exists).
+- `te macro set -q description` example replaced; the settable properties are `name`, `execute`, `enabled`, `tooltip`, `validContexts`.
+- Removed the nonexistent `te script --timeout` flag.
+- `te test snapshot`/`compare` were documented as a bare local snapshot-diff pair; snapshot takes `--save <file>`/`--diff <baseline>` and compare is A/B between two deployed models (`--source-a`/`--source-b`).
+- The pbir-tandem rename workflows claimed `te move` does not rewrite DAX and made `te replace` a mandatory second step; on 0.6.0 `te move` cascades bracketed DAX references for both measure and table renames (verified against the binary). `te replace` is now scoped to what the cascade cannot see (string-literal name comparisons, descriptions, partition M). Cross-table moves still do not rewrite table-qualified refs; the save gate rejects them, which the workflow now explains.
+- Softened the "bpa run --fix emits TWO JSON documents" gotcha: the fix-summary document is only emitted when fixes actually apply.
 
 [0.3.0]: https://github.com/TabularEditor/CLI/releases/tag/skill-v0.3.0
 

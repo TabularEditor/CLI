@@ -19,6 +19,8 @@ The `te` CLI is a single self-contained binary that loads, edits, validates, dep
 - The user mentions "te CLI", "the new Tabular Editor CLI", or runs a `te <command>` in a terminal
 - The user wants to scaffold, inspect, edit, validate, deploy, refresh, query, or test a semantic model from the terminal on any OS
 - The user wants to convert TMDL, BIM, or PBIP, run BPA, or format DAX from the command line
+- The user wants to set up a DAX regression test suite, snapshot baselines, or A/B-compare two deployed models
+- The user is building a CI/CD pipeline (GitHub Actions or Azure DevOps) that validates, tests, or deploys a semantic model to Power BI / Fabric
 - The user is migrating CI/CD pipelines from `TabularEditor.exe` (TE2) to `te`
 
 ## When NOT to use this skill
@@ -36,6 +38,7 @@ The `te` CLI is a single self-contained binary that loads, edits, validates, dep
 - Mutations stage in memory by default. `te set`, `te add`, `te remove`, `te move`, `te replace`, `te format`, `te script`, `te macro run`, `te incremental-refresh set/remove` need `--save` to persist (unless `interactiveEditMode` is set to `save`).
 - The BPA gate is ON by default for `te deploy` and `te save`. Bypass deliberately: `--skip-bpa`, `--fix-bpa`, or `bpa.onDeploy` / `bpa.onSave` config (keys are nested under `bpa.`, not flat).
 - In CI: pass `--non-interactive` and `--force`. `te deploy` prompts with `n` as the safe default and hangs pipelines without `--force`.
+- Metadata commands (`te list`, `te get`, `te set`, `te add`, `te validate`, `te bpa run`, `te format`, `te script`) work on a local model via `-m`. Commands that execute DAX or touch data (`te query`, `te vertipaq`, `te refresh`, `te test run`, `te test snapshot`) need a deployed model: pass `-s`/`-d` (or an active connection); `-m` alone errors with "No server specified". `te vertipaq --import <file.vpax>` is the offline exception.
 - Never put secrets on the command line (visible in `ps` and shell history). Use `--auth env` with `AZURE_CLIENT_ID`/`AZURE_CLIENT_SECRET`/`AZURE_TENANT_ID`, stdin (`-`), or `--auth managed-identity`.
 - Avoid destructive operations without explicit direction: `te remove`, `te move`, `te deploy --create-only`, `te save --force`, `te connect --clear`. If a command is blocked by permissions, stop and ask.
 
@@ -80,9 +83,9 @@ The highest-frequency tasks in their most concise form. Full flags are in `refer
 
 1. **Summarize a model (most concise)**: `te load ./model` prints a model summary. For a structural inventory, `te list` (tables), `te list Measures` (every measure across the model), `te list Relationships` (all relationships). Add `--output-format json` for a machine-readable dump.
 2. **Search the model (fastest)**: `te find "<text>" --in names --paths-only -m ./model`. Scope `--in` to `names`, `expressions`, `descriptions`, `displayFolders`, ...; `--in expressions` walks every DAX and M expression. `--paths-only` is the fast, pipeable form. Structural lookups use wildcards (`te list "Sales/*Amount"`). Relationships are enumerated with `te list Relationships` (or DAX `EVALUATE INFO.VIEW.RELATIONSHIPS()` for the friendly view with cross-filter direction and active flag).
-3. **Query the model**:
-   - Positional DAX: `te query "EVALUATE TOPN(10, Sales)" -m ./model` (or `-q "<dax>"`; explicit `-q` still wins)
-   - From a `.dax` file: `te query -f query.dax -m ./model`
+3. **Query the model** (needs a deployed model: `-s`/`-d` or an active connection; a local `-m` path cannot execute DAX):
+   - Positional DAX: `te query "EVALUATE TOPN(10, Sales)" -s ws -d model` (or `-q "<dax>"`; explicit `-q` still wins)
+   - From a `.dax` file: `te query --file query.dax -s ws -d model`
    - Save results (format picked by extension): `--output-file out.csv` (csv/tsv/json/dax); machine-readable stdout: `--output-format json`.
 4. **Make a change** (stages in memory; `--save` persists): `te set Sales/Revenue -q expression -i "SUM(Sales[Amount])" --save`. Also `te add`, `te remove`, `te move`. Read the current value first with `te get Sales/Revenue -q expression`.
 5. **Make bulk changes**:
@@ -91,7 +94,7 @@ The highest-frequency tasks in their most concise form. Full flags are in `refer
 6. **Validate and optimize**:
    - Validate DAX, schema, and relationships: `te validate -m ./model --errors-only`.
    - Best-practice gate: `te bpa run --fail-on warning -m ./model` (`--fix` auto-applies fixes); format DAX with `te format --save -m ./model`.
-   - Size and storage: `te vertipaq --columns --detail --top 20 -m ./model` surfaces the largest columns first; `references/semantic-modeling-practices.md` covers what to do about them.
+   - Size and storage: `te vertipaq --columns --detail --top 20 -s ws -d model` surfaces the largest columns first (VertiPaq stats live in the deployed database; for offline analysis use `--import stats.vpax`); `references/semantic-modeling-practices.md` covers what to do about them.
 
 ## Global options
 
@@ -105,6 +108,7 @@ Abbreviated; the full table (including `--recent`, server and database detail) i
 | `--auth <method>` | `auto` \| `interactive` \| `spn` \| `env` \| `managed-identity` |
 | `--output-format <fmt>` | `auto` \| `text` \| `json` \| `csv` \| `tmsl` (alias `bim`) \| `tmdl`; how STDOUT renders |
 | `--non-interactive` | Disable prompts; fail if input missing (set in CI) |
+| `--error-format <fmt>` | `text` (default) \| `json`; how errors/warnings render on stderr |
 | `--debug` | Debug logs to stderr |
 
 **Note:** `--output-format` (how stdout renders) and `--serialization` (how a model is written to disk on `init`/`save`) are different flags. Do not conflate them.
@@ -138,7 +142,7 @@ Ten command families. Full flags and examples in `references/command-reference.m
 - Analysis & quality: `te validate`, `te bpa run`, `te vertipaq`, `te format`
 - Execution: `te query`, `te script`, `te macro`
 - Deploy & refresh: `te deploy`, `te refresh`, `te incremental-refresh`
-- Testing: `te test`
+- Testing: `te test` (`run`, `init`, `list`, `spec`, `use`, `snapshot`, `compare`); suite authoring in `references/testing.md`
 - Connection & auth: `te connect`, `te auth`, `te profile`, `te session`
 - Configuration: `te config`, `te migrate`, `te completion`
 - Shell: `te interactive` (model-aware REPL; subcommands work without the `te` prefix)
@@ -159,7 +163,7 @@ For build scripts that issue many `te` calls, set `te config set bpa.onSave fals
 
 `te` owns the semantic model. Two sibling CLIs own the layers around it, and the highest-value workflows cross the boundary:
 
-- `pbir` (the Power BI report layer): renaming or moving a model object leaves the report bound to the old `Table.Field`. Rename in the model (`te move`, then `te replace --in expressions --save`), then repair the report bindings (`pbir fields replace`, `pbir validate --fields`). See `references/pbir-cli-tandem.md`.
+- `pbir` (the Power BI report layer): renaming or moving a model object leaves the report bound to the old `Table.Field`. `te move` cascades DAX references inside the model, but it cannot see report JSON; repair the report bindings separately (`pbir fields replace`, `pbir validate --fields`). See `references/pbir-cli-tandem.md`.
 - `fab` (the Fabric / Power BI service): export a model from a workspace, edit and gate it locally with `te`, then deploy over XMLA (`te deploy`) or import it back (`fab import`). See `references/fabric-cli-tandem.md`.
 
 Gate any cross-tool refactor with `te validate` before touching the report or the service, and remember every `te` mutation stages in memory until `--save`.
@@ -169,10 +173,11 @@ Gate any cross-tool refactor with `te validate` before touching the report or th
 Bundled (load as needed):
 
 - `references/command-reference.md` - object path grammar, global options, all 10 command families, authentication, connections/profiles/sessions
+- `references/testing.md` - authoring `.test.yaml` suites (assertions, tolerance, tags, matrix), snapshot regression, A/B compare across workspaces
 - `references/semantic-modeling-practices.md` - modeling best practices tied to `te` commands, with sources
 - `references/workflows.md` - multi-step recipes (table + M partition, format conversions, deploy, refresh, perspectives, translations, incremental refresh, field parameters)
 - `references/gotchas.md` - path/property asymmetries, output shapes, behavior traps
-- `references/config-cicd-env.md` - config keys, speed knobs, CI/CD (GitHub Actions, Azure DevOps), output formats, exit codes, environment variables
+- `references/config-cicd-env.md` - config keys, speed knobs, CI/CD pipelines (GitHub Actions, Azure DevOps, Fabric practices), output formats, exit codes, environment variables
 - `references/te2-migration.md` - TE2 compat activation and full flag mapping
 - `references/pbir-cli-tandem.md` - using `te` with the `pbir` CLI (rename and refactor propagation, thin reports, validation pairing)
 - `references/fabric-cli-tandem.md` - using `te` with the `fab` CLI (export/edit/deploy round-trip, discovery, refresh, promotion)

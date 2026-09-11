@@ -1,6 +1,6 @@
 {
   "name": "te-cli-agentic-use",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "description": "AI agent skill for the cross-platform Tabular Editor CLI (te): drive Power BI and Analysis Services semantic models from the terminal, with semantic modeling best practices tied to te commands.",
   "author": {
     "name": "Tabular Editor",

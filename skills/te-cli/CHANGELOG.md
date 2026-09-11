@@ -2,6 +2,74 @@
 
 All notable changes to the `te-cli` skill are documented in this file.
 
+## [0.4.0] - 2026-09-11
+
+Aligns the skill with CLI 0.7.0, which removed six commands, changed the property and model-source syntax on every command, and made deploy and refresh dry runs by default. Every file was re-verified against the 0.7.0 binary and the current docs.
+
+### Changed
+
+- `te refresh --execute` asks for confirmation like `te deploy`; every unattended refresh example (SKILL.md, `command-reference.md`, `config-cicd-env.md`, `workflows.md`, `fabric-cli-tandem.md`) now passes `--execute --force`, and the exit-code list names an unattended `--execute` without `--force` as a failure.
+- `te deploy` documented as failing (non-zero exit, JSON `success: false`) when the server accepts the metadata but parks objects with errors (`command-reference.md`, `config-cicd-env.md`, `gotchas.md`, `fabric-cli-tandem.md`).
+- A partition's body is `-p Expression` on `te get` and `te set` for every partition kind; the `MExpression` asymmetry entry in `gotchas.md` and the `MPartition` row in the `-p` property table were rewritten, and `workflows.md` examples use `Expression` (`MExpression` / `Query` noted as aliases).
+- `-p Name=null` clears text properties too, and a piped value is verbatim; `--unset <Name>` added to `te set` in SKILL.md, `command-reference.md` and `gotchas.md`.
+- `--semicolons` described as an input dialect that exists only on `te util format-dax` and is refused on `te set --format`; the `formatOptions.useSemicolons` config key removed from `config-cicd-env.md` (`command-reference.md`, `workflows.md`, `gotchas.md`).
+- `te get` object-path rules: a wildcard or container path lists every match without `--ls`; `-p`, `--deps` and `--properties` need one object (`command-reference.md`, `gotchas.md`).
+- `te find` documented as a literal, case-insensitive substring match unless `--regex`; `te get --where` with no path filters the top-level tables; empty results name the scope and matching mode and JSON prints `[]` (`command-reference.md`, `gotchas.md`).
+- `te get <object>` JSON leads with `objectPath` (was `path`); `te deps` JSON entries carry `objectPath`, `object`, `objectType`; `te diff` lists the contents of an object present in only one model (`command-reference.md`).
+- `--ci` accepted values closed: `vsts`/`azdo`/`azure-devops`, `github`/`gh`, `none`; anything else is rejected instead of silently emitting nothing (`command-reference.md`, `config-cicd-env.md`, `gotchas.md`).
+- `--update-schema` and `te add -t Table --source-table` infer the connection from the model's own data source, with `--data-source <name>` to choose among several; explicit connection flags always win (`command-reference.md`, `workflows.md`).
+- `te move` refuses to rename relationships, KPIs and table permissions instead of printing `No changes.` (`gotchas.md`).
+- Interactive shell: leaving with unsaved staged edits asks to confirm, or warns and exits non-zero when piped; `exit --force`; Ctrl+C discards the half-typed line (SKILL.md, `command-reference.md`, `gotchas.md`).
+
+- Property syntax everywhere is `-p Name=Value` (repeatable; bare `Name=Value` assignments also accepted on `te set`; `te get <path> -p <Name>` projects one property; `te add ... -p Expression="..."`; same on `te macro set` and `te bpa rules set`). Every `-q <name> -i <value>` example in SKILL.md and all references was rewritten; property names are shown PascalCase as `te get` prints them.
+- The model is always given with `--model` (or `-s`/`-d`, `--local`, `--recent`, or the active `te connect`), never as a trailing path. All examples that passed a model positionally were rewritten across SKILL.md and every reference file.
+- `te deploy` and `te refresh` are documented as dry runs that print TMSL; `--execute` performs the action, and CI examples now pass `--execute --force --non-interactive`. The deploy target is `--target-server`/`--target-database`; `-s`/`-d` on deploy mean the model source. `te deploy --xmla <file>` became `te deploy > <file>`; `te refresh --dry-run` became plain `te refresh`.
+- `te save` is documented as `te save-as` (alias `save` in the shell; inside the REPL `save` commits staged edits and `save-as` re-serializes).
+- `te format` was replaced: `te set <path> --format <Property>` formats a stored expression (with `--semicolons`, `--long`, `--no-space-after-function` on DAX), `te util format-dax` / `te util format-m` format loose expressions, and a whole-model DAX sweep is `te script --inline "Model.AllMeasures.FormatDax();" --save`. `te migrate` moved to `te util migrate` (`te2-migration.md`, `config-cicd-env.md`).
+- `te incremental-refresh` was replaced by ordinary property access: `te get <table>/RefreshPolicy`, `te set <table>/RefreshPolicy -p Prop=Value`, `te set <table> -p RefreshPolicy=null`, and `te refresh --apply-refresh-policy <table> --execute` (`command-reference.md`, `workflows.md`).
+- `te script` sources are `--file <path>` (or a bare `.cs`/`.csx` positional), `--inline "<code>"` and `--validate`; `-S`, `-e`, `--script`, `--expression`, `--dry-run` are gone. `te script` exits non-zero when a script calls `Error(...)`.
+- Object path grammar rewritten in `command-reference.md` and SKILL.md: `{ } * ?` are reserved and must be quoted, `KPIs`/`Sets`/`Functions` are container keywords (a table literally named `KPIs` is `"'KPIs'"` in filter paths), relationships are `Relationships/{guid}`, calendars `<table>/Calendars/<name>`, sets `<table>/Sets/<name>`, and every path the CLI prints is quoted so it pastes back.
+- `-t/--type` documented with its two meanings: disambiguation of a path on `get`/`set`/`remove`/`move`/`deps` (PascalCase values), filtering on `te list` and `te get --ls`/`--where` (lower-case values, now including `kpi`, `set`, `function`, `calculationitem`).
+- BPA sections now describe exactly Tabular Editor 3's built-in rule set; the six `VPA_*` rules are no longer built-ins and `--vpa-rules` is gone (`--vpax` still feeds your own VPA-aware rules); `bpa.builtInRules`, `bpa.disabledBuiltInRuleIds`, `te bpa rules disable/enable` documented.
+- `config-cicd-env.md` config-key table reconciled with the docs: `autoFormat` is scoped to the objects a mutation changed and always uses the built-in formatter, `formatOptions.shortFormat` and `launchInteractiveMode` defaults corrected, `bpa.onSave` gates `te save-as`; `--output-format` no longer lists a nonexistent `auto` value and `tmdl` is `te get` only; `--ci` no longer claimed on `te script`; runner install rewritten around a committed binary with the public CDN archive as the scriptable alternative.
+- `fabric-cli-tandem.md`: `te diff` cannot take a remote side (export with `te save-as -s/-d -o` first), `--ci azdo` corrected to `--ci vsts`, `te connect` persistence and `te deps --unused` caveats corrected, XMLA refresh described as synchronous.
+- `pbir-cli-tandem.md`: guidance that leaned on `te replace` now uses `te find` to locate and `te set -p` / `te script --inline` to change, dry run first then `--save`.
+- `semantic-modeling-practices.md`: calculation-group, RLS, relationship and bulk-metadata workflows rewritten with `-p` and container-form paths; `DiscourageImplicitMeasures` corrected to a model-level property; calc-item format property is `FormatStringExpression`.
+- `testing.md`: JSON output described as the unified findings envelope (`summary`, `findings[]` with `TEST_FAIL`/`TEST_ERROR`/`TEST_SUITE_INVALID`, `testSummary`, `suites[]`, `invalidSuites[]`); a suite that fails validation exits 1.
+- Preview cutoff moved to 2026-10-31 in SKILL.md, README and references; wording is "no license is required during preview".
+- README rewritten around the folder-based install (`SKILL.md` plus `references/`), matching the docs page; smoke-test question updated to the dry-run deploy behaviour. Plugin manifests bumped to 0.4.0.
+
+### Added
+
+- `te get <path> --properties [--all]`: the authoritative per-object list of property names `-p` accepts, with type, writability and allowed values; unknown-property errors point at it and the `Settable:` line no longer omits `SortByColumn` (SKILL.md, `command-reference.md`, `gotchas.md`).
+- `te validate` codes `TE0012` / `TE0013` (name collisions that block `te save-as` unless `--force`/`--skip-validation`) and `TE0014` (TMDL folder without `database.tmdl`); every finding shows its code in the text tables (`command-reference.md`, `gotchas.md`).
+- Administrator policies on Windows (`DisableCSharpScripts`, `DisableMacros`, `DisableBpaDownload`, `DisableTelemetry`) and the registry keys they are read from (`config-cicd-env.md`, `gotchas.md`, `command-reference.md`).
+- `--non-interactive` with no credentials fails immediately with the ways to sign in (`gotchas.md`).
+- `te get` as the single show pipeline: `--where Prop=Value` (repeatable AND, `*` wildcard), `--ls`, `--deps[=upstream|downstream]` with `--deep`/`--max-depth`, `--unused` with `--hidden`, `--paths-only`; `te list` and `te deps` described as shortcuts over it.
+- `te list KPIs`, `te list Sets`, `te list Functions`, `--type relationship --paths-only` (GUID form).
+- Mutation output: every mutating command prints a before/after diff; `--stat`, `--name-only`, `--diff` flags and the `mutationOutput` config key; JSON `changes[]` with `objectPath`, `objectType`, `changeKind` (`created`/`deleted`/`modified`/`moved`), `properties[] {property, before, after}`, shared with `te diff`.
+- Unified findings JSON shape for `te validate`, `te bpa run`, `te test run`, `te query` (`command`, `durationMs`, `summary`, `findings[]` with `severity`, `code`, `objectPath`, `expressionPosition`, `fixable`; `bpa run --fix` outcome under a `fix` key); CI annotations carry the code and info findings are notices.
+- `te add <table>/<col> -t DataColumn -p SourceColumn=... -p DataType=...`; `te add "<table>" -t Table --source-table dbo.X` (and `--query`, `--data-source`) from the model's own data source; `te set <table> --update-schema [--drop-removed-columns]`; `te add` container-form paths (`Sales/Measures/Margin`, `Sales/Partitions/Q1`, `Roles/Admin/TablePermissions/Sales`).
+- `te util` family (`format-dax`, `format-m`, `migrate`; refuses model flags); remote-to-remote deploy (`te deploy -s src -d m --target-server dst --target-database m2 --execute`); `te refresh` JSON `progress[]`/`vertipaq[]`; `te connect --local` covering Power BI Desktop, Visual Studio and SSAS instances; `te profile set` overrides; `fish` and `powershell` completions; REPL launch via bare `te` and prefix-less help.
+- `config-cicd-env.md`: `mutationOutput`, `queryLog`, `profiles` keys; path-resolution precedence; `TE_INTERACTIVE`, `NO_SPINNER`, `CI`, `AZURE_CLIENT_CERTIFICATE_PATH`, `AZURE_AUTHORITY_HOST`; closed `--auth` value list; offline `te script --validate` lint step; stdin secret login idiom.
+- `testing.md`: `te test spec --json-schema`, `te test init --path`, `te test list --tag`, bare `te test use` clears the active suite, JSON run example.
+- `semantic-modeling-practices.md`: finding unformatted measures with `te get Measures --where FormatString= --ls --paths-only`, auto date tables with `te list "LocalDateTable_*"`, prune candidates with `te deps --unused --hidden`; note that size and cardinality rules are not built-in BPA rules.
+- `te2-migration.md`: context-sensitive TE2 flag note, `-LOGIN`/`-SC` as not yet implemented, `te util migrate --output-format json` shape, condensed migration playbook.
+- `gotchas.md`: a "syntax that no longer exists" section (`-q`/`-i`, trailing model path, removed commands and script flags, `--vpa-rules`), the reserved-character and `KPIs`/`Sets` quoting traps, the `-t` dual meaning, deploy/refresh doing nothing without `--execute`, `-s`/`-d` on deploy being the source, `mutationOutput none` hiding the diff, `autoFormat` reformatting every changed object, `te set <table> --format` reaching nothing (name the partition), translation for a missing culture exiting 0 with "No changes.", single-object perspective membership not being addressable.
+
+### Fixed
+
+- Removed every section for `te load`, `te open`, `te replace`, `te format`, `te incremental-refresh` and root-level `te migrate`; removed the `te3ExePath` config key and `TE3_EXE_PATH` variable; no license-related command or key remains.
+- Removed the MPartition path asymmetry gotcha (`te add Sales/Partitions/X` works) and the two-JSON-document `bpa run --fix` gotcha (one document with a `fix` key); removed the `te move` rename-to-table-name gotcha (verified to work).
+- Partition expressions: `te set <partition> -p Expression=` and `te get -p Expression` both error; the property is `MExpression`, while `te add -t MPartition -p Expression=` and `te set <partition> --format Expression` work (verified against the binary).
+- `te init` default compatibility level corrected to 1705 (PowerBI mode) / 1500 (Analysis Services); `--auth` default corrected to `auto`; `--output-format` default is `text`, not TTY-dependent.
+- `te refresh --partition` cannot be combined with `--table` (the old recipe did both); `te find ... | xargs te get {} -q expression` pipeline corrected to `-p Expression`; `te deploy -p` is `--profile`, not `--property`.
+- `pbir-cli-tandem.md`: sort-by clear is `-p SortByColumn=null`; `te init` comment no longer states a compatibility level.
+- `fabric-cli-tandem.md`: removed the obsolete "diff exit codes documented inconsistently" note (docs and binary agree: 0 identical, 1 differ, 2 error).
+- `workflows.md`: single-measure perspective membership cannot be set through a path on the binary; recipe now uses a `te script` one-liner; dropped the false claim that `te list "Perspectives/X"` confirms membership.
+
+[0.4.0]: https://github.com/TabularEditor/CLI/releases/tag/skill-v0.4.0
+
 ## [0.3.0] - 2026-07-02
 
 Aligns the skill with CLI 0.6.0.

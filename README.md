@@ -6,7 +6,7 @@
 Public home for **bug reports, feature requests, and discussions** about the [Tabular Editor CLI](https://docs.tabulareditor.com/features/te-cli/te-cli.html) (`te`) — a cross-platform command-line tool for Power BI and Analysis Services semantic models.
 
 > [!IMPORTANT]
-> The Tabular Editor CLI is in **Limited Public Preview**. It is offered for evaluation with a Tabular Editor account; no license is required during preview. Commands, flags, and outputs may change before general availability. **The preview build stops functioning after 2026-09-30.** We recommend against using the CLI in production CI/CD pipelines during preview.
+> The Tabular Editor CLI is in **Limited Public Preview**. It is offered for evaluation with a Tabular Editor account; no license is required during preview. Commands, flags, and outputs may change before general availability. **The preview build stops functioning after 2026-10-31.** We recommend against using the CLI in production CI/CD pipelines during preview.
 
 **📥 Download:** https://tabulareditor.com/download-tabular-editor-cli (requires account creation)
 

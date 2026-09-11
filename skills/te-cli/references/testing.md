@@ -2,9 +2,9 @@
 
 Companion to the te-cli skill (SKILL.md). CI wiring (pipelines, TRX publishing, promotion gates) is in config-cicd-env.md.
 
-`te test` runs DAX assertion tests, so every executing subcommand (`run`, `snapshot`, `compare`) needs a **deployed model** (`-s`/`-d` or an active connection); a local `-m` path cannot execute DAX. The suite files themselves live in the repo next to the model source, which is the point: a PR that changes a measure carries its test change in the same diff.
+`te test` runs DAX assertion tests, so every executing subcommand (`run`, `snapshot`, `compare`) needs a **deployed model** (`-s`/`-d` or an active connection); a local `--model` path cannot execute DAX. The model is always given with `--model`/`-m` or `-s`/`-d`, never as a trailing positional argument. The suite files themselves live in the repo next to the model source, which is the point: a PR that changes a measure carries its test change in the same diff.
 
-`te test spec` prints the authoritative format reference from the binary; `te test init --example` scaffolds a richly commented suite showing every assertion type. What follows is the working knowledge.
+`te test spec` prints the authoritative format reference from the binary (`--json-schema` emits the JSON Schema for editor validation); `te test init --example` scaffolds a richly commented suite showing every assertion type. What follows is the working knowledge.
 
 ## Suite anatomy
 
@@ -35,7 +35,7 @@ tests:
       Orphans: 0
 ```
 
-Test-case fields: `name`, `query` (inline DAX, multiline with `|`) or `query_file` (path to a `.dax` file relative to the suite dir), `tags` (filter with `te test run --tag <tag>`), `tolerance` / `tolerance_abs` overrides, `matrix` (parameterized expansion; `{var}` placeholders in the query and expectations), `expect` (at least one assertion), and `compare` (multi-row diff settings used by `te test compare`).
+Top-level fields: `suite`, `description`, `connection` (`server`, `database`, `auth`), `defaults` (`tolerance`, `tags`), `tests`. Test-case fields: `name` (unique within the suite), `query` (inline DAX, multiline with `|`) or `query_file` (path to a `.dax` file relative to the suite dir), `tags` (filter with `te test run --tag <tag>`), `tolerance` / `tolerance_abs` overrides, `matrix` (parameterized expansion; `{var}` placeholders in the query and expectations), `expect` (at least one assertion), and `compare` (multi-row diff settings used by `te test compare`).
 
 ## Assertion types
 
@@ -63,15 +63,42 @@ Assertions worth writing first, in rough order of value:
 ## Generating and running
 
 ```bash
-te test init --example                      # commented reference suite
+te test init --example                      # commented reference suite (into .te-tests/; --path <dir> elsewhere)
 te test init --from-model --model ./model   # one stub per model measure; keep the ones worth asserting
-te test list --suite .te-tests              # parse check without a connection
+te test list --suite .te-tests              # parse check without a connection (--tag narrows)
 te test run -s ws -d model --auth env --non-interactive --ci github --trx test.trx
 te test run --tag integrity                 # subset by tag
-te test use ./suites/revenue                # session-scoped active suite (interactive work)
+te test run --suite ./suites/revenue --output-format json   # machine-readable, one document
+te test use ./suites/revenue                # session-scoped active suite (interactive work); bare `te test use` clears it
 ```
 
-`--fail-on error` (default) exits 1 on failures, which is what makes `te test run` a pipeline gate.
+`te test run` flags: `--suite <dir>`, `--tag <tag>`, `--fail-on error|warning` (default `error`), `--ci vsts|github`, `--trx <path>`. It exits `1` when any test fails at or above the threshold, which is what makes it a pipeline gate. Suites are validated before any connection is made: a suite that fails validation (a missing `query_file`, a test with no `expect`) also exits `1` without running anything, so a broken YAML file cannot pass as "no tests ran".
+
+### JSON output
+
+Under `--output-format json`, `te test run` emits the findings envelope shared with `te validate`, `te bpa run` and `te query` - a single document, always:
+
+```json
+{
+  "command": "test run",
+  "durationMs": 1830,
+  "summary": { "errors": 1, "warnings": 0, "info": 0, "total": 1 },
+  "findings": [
+    { "severity": "error", "source": "test", "code": "TEST_FAIL", "message": "...",
+      "object": "FY25 revenue matches finance sign-off", "objectType": "Test", "fixable": false }
+  ],
+  "suites": [ ... ],
+  "invalidSuites": [ { "file": "...", "validationErrors": [ "..." ] } ],
+  "testSummary": { "passed": 11, "failed": 1, "errored": 0, "skipped": 0, "invalidSuites": 0, "total": 12, "durationMs": 1830 }
+}
+```
+
+- `findings[]` carries one entry per problem: `TEST_FAIL` (assertion failed), `TEST_ERROR` (the query errored when it was not expected to), `TEST_SUITE_INVALID` (a suite file failed validation; `objectType` is `TestSuite`). Passing tests do not appear in `findings`.
+- `summary` is the severity tally shared with the other commands; **`testSummary`** holds the per-status test tallies (`passed`, `failed`, `errored`, `skipped`, `invalidSuites`, `total`).
+- `suites[]` (per-suite results) and `invalidSuites[]` (file plus `validationErrors[]`) are retained alongside the envelope.
+- Test findings carry `object`/`objectType` but no `objectPath`, since a test is not a model object.
+
+With `--ci github`/`--ci vsts`, annotations go to stderr and carry the finding code, so stdout stays parseable.
 
 ## Snapshot regression (refactor guard)
 
@@ -83,7 +110,7 @@ te test snapshot --save baseline.snapshot.json -s ws -d model
 te test snapshot --diff baseline.snapshot.json --tolerance 0.001 -s ws -d model
 ```
 
-Scope with `--measures "Revenue*"` or `--table Sales`. Snapshots compare a model against its own past; data refreshes between capture and diff will show up as drift, so snapshot workflows fit refactors on a stable dataset, not moving data.
+Scope with `--measures "Revenue*"` (glob on measure names) or `--table Sales`. `--save` here names the snapshot file to write and has nothing to do with the mutation flag on editing commands. Snapshots compare a model against its own past; data refreshes between capture and diff will show up as drift, so snapshot workflows fit refactors on a stable dataset, not moving data.
 
 ## A/B compare (pre-cutover gate)
 
@@ -93,4 +120,4 @@ Scope with `--measures "Revenue*"` or `--table Sales`. Snapshots compare a model
 te test compare --source-a prod-ws/prod-model --source-b test-ws/candidate-model --suite .te-tests --tolerance 0.001
 ```
 
-`--auth-a`/`--auth-b` allow different credentials per side (e.g. prod read via one SPN, test via another).
+Each side is `workspace/model`. `--auth-a`/`--auth-b` allow different credentials per side (e.g. prod read via one SPN, test via another). Without `--suite`, compare runs auto-generated measure queries, like `snapshot` does.

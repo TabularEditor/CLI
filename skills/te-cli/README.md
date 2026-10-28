@@ -3,7 +3,7 @@
 A drop-in skill that teaches AI coding agents how to use the [Tabular Editor CLI (`te`)](https://github.com/TabularEditor/CLI) - a cross-platform single binary for managing Power BI and Analysis Services semantic models from the terminal on macOS, Linux, and Windows.
 
 > [!IMPORTANT]
-> **Preview.** The Tabular Editor CLI itself is in Limited Public Preview, with preview builds stopping after 2026-10-31. No license is required during preview. This skill tracks the preview surface and will evolve alongside the CLI.
+> **Preview.** The Tabular Editor CLI itself is in Limited Public Preview, with preview builds stopping after 2026-12-31. No license is required during preview. This skill tracks the preview surface and will evolve alongside the CLI.
 
 ## What this is
 

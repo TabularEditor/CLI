@@ -2,6 +2,24 @@
 
 All notable changes to the `te-cli` skill are documented in this file.
 
+## [0.5.0] - 2026-10-27
+
+Aligns the skill with CLI 0.8.0: a new `te schemacheck` command, three retired `--save` spellings, and TE2 compatibility mode changes.
+
+### Changed
+
+- `--save` only means "persist this mutation": `te test snapshot --save <file>` became `--output-file <file>` / `-o` (`command-reference.md`, `testing.md`, `workflows.md`); `te vertipaq --annotate --save` became `--annotate --push`; `te auth login --save[=false]` is gone, and the one-shot service principal example now uses `--auth env` (`command-reference.md`). A gotcha names the three old spellings (`gotchas.md`).
+- TE2 `-SC` / `-SCHEMACHECK` now maps to `te schemacheck` instead of "not yet implemented", with the scope differences from TE2 (`te2-migration.md`).
+- TE2 compatibility mode: a failed script aborts the run with no build, BPA, deploy or `-T` output; compile errors are reported with line and column; each script runs in one update batch; scripts see `TECLI`, not `TE3` (`te2-migration.md`).
+- Preview cutoff moved to 2026-12-31 in SKILL.md, README and references.
+- Plugin manifests bumped to 0.5.0.
+
+### Added
+
+- `te schemacheck [table]` with `--ci`, `--trx`, `--fail-on`, exit rule, **Not checked** tables and the TE2 annotations it honours (`command-reference.md`, SKILL.md command index).
+- `te deploy --skip-linguistic-metadata` (`command-reference.md`).
+- The `BlockUnsafeScripts` administrator policy and its effect on `te script`, `te macro run` and `te bpa run --fix` (`command-reference.md`, `config-cicd-env.md`, `gotchas.md`).
+
 ## [0.4.0] - 2026-09-11
 
 Aligns the skill with CLI 0.7.0, which removed six commands, changed the property and model-source syntax on every command, and made deploy and refresh dry runs by default. Every file was re-verified against the 0.7.0 binary and the current docs.
